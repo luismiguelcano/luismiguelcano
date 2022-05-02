@@ -1,1 +1,80 @@
+'First enable Microsoft Outlook 16.0 Object Library
+'Then enable Microsoft Outlook View Control
+Sub ExtraerCorreosDeOutlook()
 
+Dim OutlookApp As Outlook.Application
+Dim ONameSpace As Object
+Dim MyFolder As Object
+Dim OItem As Outlook.MailItem
+Dim Fila As Integer
+Dim FolderDescarga As String
+Dim Adjuntos As Integer
+Dim NombreArchivo1, NombreArchivo
+Dim i As Integer
+Dim Fecha1 As Date
+Dim Fecha2 As Date
+
+
+Set OutlookApp = New Outlook.Application
+Set ONameSpace = OutlookApp.GetNamespace("MAPI")
+
+'Here you can choose the main inbox folder or a specific path in the mail
+'Set MyFolder = ONameSpace.GetDefaultFolder(olFolderInbox)
+Set MyFolder = ONameSpace.Folders("luisc@gointegratedgroup.com").Folders("Scans")
+
+'Modificar esta linea para que pregunte la ruta o inserta la ruta local y no la ruta en linea del onedrive
+'FolderDescarga = ThisWorkbook.Path & "\Extract"
+FolderDescarga = "c:\Users\goloadmin\OneDrive - GO Integrated Group\Documents\luis\Reports\Monthly Aging\Extract"
+Range(Range("A2"), ActiveCell.SpecialCells(xlLastCell)).ClearContents
+
+'Fecha1 = Inicio
+'Fecha2 = Fin
+'Fecha mes/dia/anio
+Fila = 2
+Fecha1 = "04/13/2022"
+Fecha2 = "04/20/2022"
+
+'por cada correo en la carpeta de correos
+For Each OItem In MyFolder.Items
+    'Si fecha de recibido del correo es mayor o igual a Fecha1, y fecha de recibido es menor o igual Fecha2
+    If Int(OItem.ReceivedTime) >= Fecha1 And Int(OItem.ReceivedTime) <= Fecha2 Then
+        
+        'limpia varible adjuntos
+        Adjuntos = 0
+        'limpia variable NobreArchivo1
+        NombreArchivo1 = ""
+        
+        'Si la cantidad de archivos adjuntos en el correo en mayor que 0 Entonces
+        If OItem.Attachments.Count > 0 Then
+        
+            'Para i igual que 1 hasta la cantidad de archivos adjuntos en el correo
+            For i = 1 To OItem.Attachments.Count
+                'Asigna el nombre del archivo adjunto a la variable NombreArchivo
+                NombreArchivo = OItem.Attachments.Item(i).Filename
+                'Guarda el archivo adjunto en la ubicacion de FolderDescarga con el nombre dentro de NombreArchivo
+                OItem.Attachments.Item(i).SaveAsFile FolderDescarga & "\" & NombreArchivo
+                'En excel guarda en una celda el nombre de todos los archivos adjuntos que se descargaron
+                NombreArchivo1 = NombreArchivo & ", " & NombreArchivo1
+                'incrementa la variable Adjuntos en 1
+                Adjuntos = Adjuntos + 1
+            Next i
+        End If
+            Sheets("Sheet1").Cells(Fila, 1).Value = OItem.SenderEmailAddress
+            Sheets("Sheet1").Cells(Fila, 2).Value = OItem.To
+            Sheets("Sheet1").Cells(Fila, 3).Value = OItem.Subject
+            Sheets("Sheet1").Cells(Fila, 4).Value = OItem.ReceivedTime
+            Sheets("Sheet1").Cells(Fila, 5).Value = Adjuntos
+            Sheets("Sheet1").Cells(Fila, 6).Value = NombreArchivo1
+            Sheets("Sheet1").Cells(Fila, 7).Value = OItem.Body
+    
+        Fila = Fila + 1
+        
+    End If
+
+Next OItem
+
+Set OutlookApp = Nothing
+Set ONameSpace = Nothing
+Set MyFolder = Nothing
+
+End Sub
